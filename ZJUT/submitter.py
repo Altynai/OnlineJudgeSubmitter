@@ -9,38 +9,22 @@ userpass = None
 problemId = None
 languageId = None
 
+
 def getLanguage(filetype):
     # c
     if filetype in ["c"]:
         return 1
     # c++
-    if filetype in ["cpp","cc","cxx","c++","h","hpp","hxx","h++","inl","ipp","cp","C","hh"]:
-        return 2
-    # fpc(pascal)
-    if filetype in ["pas","inc"]:
-        return 3
-    # java
-    if filetype in ["java","bsh"]:
-        return 4
-    # python
-    if filetype in ["py","rpy","pyw","cpy","py","SConstruct","Sconstruct","sconstruct","SConscript"]:
-        return 5
-    # perl
-    if filetype in ["pl","pm","pod","t","PL"]:
-        return 6
-    # Scheme
-    if filetype in ["scm","smd","ss"]:
-        return 7
-    # PHP
-    if filetype in ["php"]:
-        return 8
+    if filetype in ["cpp", "cc", "cxx", "c++", "h", "hpp", "hxx", "h++", "inl", "ipp", "cp", "C", "hh"]:
+        return 1
     else:
         return -1
+
 
 def sendRequest(method="POST", path="", body="", headers={}):
     """get the response and html"""
 
-    ojUrl = "acm.zju.edu.cn"
+    ojUrl = "acm.zjut.edu.cn"
     connection = httplib.HTTPConnection(ojUrl)
     connection.request(method, path, body, headers)
     response = connection.getresponse()
@@ -51,8 +35,8 @@ def sendRequest(method="POST", path="", body="", headers={}):
 
 def getCookie(response):
     cookie = response.getheader("set-cookie")
-    cookie = cookie.split(" ")[2]
-    return cookie
+    cookie = cookie.split(" ")
+    return cookie[0]+" "+cookie[3]
 
 
 def getCode():
@@ -66,29 +50,37 @@ def submitCode(cookie):
     global problemId
     global languageId
 
-    path = "/onlinejudge/submit.do"
+    viewstate = "/wEPDwUKMTA5NzA2MjUxMA9kFgJmD2QWAgIDD2QWAgIDD2QWAgIBD2QWAmYPZBYCAg0PEA8WAh4HQ2hlY2tlZGhkZGRkGAEFHl9fQ29udHJvbHNSZXF1aXJlUG9zdEJhY2tLZXlfXxYDBRhjdGwwMCRMb2dpblN0YXR1czEkY3RsMDEFGGN0bDAwJExvZ2luU3RhdHVzMSRjdGwwMwUfY3RsMDAkY3BoUGFnZSRMb2dpbjEkUmVtZW1iZXJNZYwHArZGLeut30pqx0yBhCjX92RO"
+    eventvalidation = "/wEWBgKE3q/0CwLh8vmTCAKEmvGlBgLg8d2aBwKX76a+DQKhlsmtCwCWCDEBQQnUZebfEN5mHwudPaWd"
+
+    path = "/Submit.aspx"
     code = getCode()
-    body = {"problemId": problemId, "languageId": languageId, "source": code}
+    body = {"ShowID":1000,"ctl00$cphPage$Source":code,
+            "ctl00$cphPage$LanguageList":0,"ctl00$cphPage$ProblemID":problemId,"ctl00$cphPage$EditButton":"Submit"}
 
     body = urllib.urlencode(body)
     headers = {"Cookie": cookie, "Content-Type": "application/x-www-form-urlencoded", "Content-Length": str(len(body))}
     responseDict = sendRequest("POST", path, body, headers)
 
     html = responseDict["html"]
-    # print html
+    with open("temp.html","w") as fout:
+        fout.write(html)
+    # print html,responseDict["response"].status,cookie
     text = re.compile("(\\d+)</font>")
     result = text.findall(html)
     return result[0]
 
 
-def loginZOJ():
-    path = "/onlinejudge/login.do"
-    body = {"handle": username, "password": userpass}
+def loginZJUT():
+    viewstate = "/wEPDwUKMTA5NzA2MjUxMA9kFgJmD2QWAgIDD2QWAgIDD2QWAgIBD2QWAmYPZBYCAg0PEA8WAh4HQ2hlY2tlZGhkZGRkGAEFHl9fQ29udHJvbHNSZXF1aXJlUG9zdEJhY2tLZXlfXxYDBRhjdGwwMCRMb2dpblN0YXR1czEkY3RsMDEFGGN0bDAwJExvZ2luU3RhdHVzMSRjdGwwMwUfY3RsMDAkY3BoUGFnZSRMb2dpbjEkUmVtZW1iZXJNZYwHArZGLeut30pqx0yBhCjX92RO"
+    eventvalidation = "/wEWBgKE3q/0CwLh8vmTCAKEmvGlBgLg8d2aBwKX76a+DQKhlsmtCwCWCDEBQQnUZebfEN5mHwudPaWd"
+    path = "/SignIn.aspx"
+    body = {"__VIEWSTATE":viewstate,"__EVENTVALIDATION":eventvalidation,"ctl00$cphPage$Login1$UserName": username, "ctl00$cphPage$Login1$Password": userpass, "ctl00$cphPage$Login1$LoginButton": "SignIn"}
     body = urllib.urlencode(body)
     headers = {"Content-Type": "application/x-www-form-urlencoded", "Content-Length": str(len(body))}
     responseDict = sendRequest("POST", path, body, headers)
     response = responseDict["response"]
-
+    
     if response.status == httplib.OK:
         error("username or password is wrong!")
     cookie = getCookie(response)[0:-1]
@@ -108,8 +100,8 @@ def getResult(cookie, runId):
             "idStart": runId,
             "idEnd": runId}
     body = urllib.urlencode(body)
-    path = path + "?" + body
-    responseDict = sendRequest("GET", path, "", {})
+    headers = {"Cookie": cookie, "Content-Type": "application/x-www-form-urlencoded", "Content-Length": str(len(body))}
+    responseDict = sendRequest("POST", path, body, headers)
 
     html = responseDict["html"]
     # get JudgeStatus
@@ -130,14 +122,12 @@ def getResult(cookie, runId):
 def checkProblem(problemId):
     """ check whether the problem exists and get the real problem code"""
 
-    path = "/onlinejudge/showProblem.do?problemCode=" + problemId
+    path = "/ShowProblem.aspx?ShowID=" + problemId
     responseDict = sendRequest("GET", path, "", {})
     html = responseDict["html"]
-    if html.find("No such problem.") != -1:
+    if html.find("error.aspx") != -1:
         error("No such problem.")
 
-    p = re.compile("submit.do\\?problemId=(\\d+)")
-    return p.findall(html)[0]
 
 def checkFile(file):
     p = re.compile("[^\\.]+\\.[^\\.]+")
@@ -157,64 +147,45 @@ def init():
     problemId = sys.argv[1]
 
     # change problemId to submit
-    problemId = checkProblem(problemId)
+    checkProblem(problemId)
     checkFile(sys.argv[2])
 
     with open("user.config") as fin:
-        username = fin.readline().split("=")[1]
-        if username.find('\n')!=-1:
-            username=username[0:-1]
-        userpass = fin.readline().split("=")[1]
-        if userpass.find('\n')!=-1:
-            userpass=userpass[0:-1]
+        username = fin.readline()[0:-1].split("=")[1]
+        userpass = fin.readline()[0:-1].split("=")[1]
     # get file's type
     filetype = sys.argv[2][sys.argv[2].find(".") + 1:]
     languageId = getLanguage(filetype)
     if languageId == -1:
-        error("ZOJ don't support this file.")
+        error("ZJUT's OJ only support C/C++.")
+
 
 def main():
-    cookie = loginZOJ()
+    cookie = loginZJUT()
     runId = submitCode(cookie)
 
-    Queuing = False
     Running = False
-    Waiting = False
     Compiling = False
     while True:
-        result = getResult(cookie)
+        result = getResult(cookie, runId)
         status = result["status"]
-        # Waiting or Running or Compiling or Queuing
-        if status == "Queuing":
-            if Queuing == False:
-                sys.stdout.write("\nQueuing")
-                Queuing = True
-            else:
-                sys.stdout.write(".")
-            time.sleep(1)
-        elif status == "Waiting":
-            if Waiting == False:
-                sys.stdout.write("\nWaiting")
-                Waiting = True
-            else:
-                sys.stdout.write(".")
-            time.sleep(1)
-        elif status == "Compiling":
+        # Running or Compiling
+        if status == "Compiling":
             if Compiling == False:
                 sys.stdout.write("\nCompiling")
                 Compiling = True
             else:
                 sys.stdout.write(".")
             time.sleep(1)
-        elif status == "Running & Judging" or status=="Running":
+        elif status == "Running":
             if Running == False:
-                sys.stdout.write("\nRunning & Judging")
+                sys.stdout.write("\nRunning")
                 Running = True
             else:
                 sys.stdout.write(".")
             time.sleep(1)
         else:
-            sys.stdout.write("\n%s\t%s\t%s\n" % (result["status"], result["time"], result["memory"]))
+            sys.stdout.write("\n%s\t%sms\t%sKB\n" % (result["status"], result["time"], result["memory"]))
             break
 
 
