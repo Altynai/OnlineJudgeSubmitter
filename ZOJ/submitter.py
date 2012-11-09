@@ -108,8 +108,8 @@ def getResult(cookie, runId):
             "idStart": runId,
             "idEnd": runId}
     body = urllib.urlencode(body)
-    headers = {"Cookie": cookie, "Content-Type": "application/x-www-form-urlencoded", "Content-Length": str(len(body))}
-    responseDict = sendRequest("POST", path, body, headers)
+    path = path + "?" + body
+    responseDict = sendRequest("GET", path, "", {})
 
     html = responseDict["html"]
     # get JudgeStatus
@@ -130,11 +130,8 @@ def getResult(cookie, runId):
 def checkProblem(problemId):
     """ check whether the problem exists and get the real problem code"""
 
-    path = "/onlinejudge/showProblem.do"
-    body = {"problemCode": problemId}
-    body = urllib.urlencode(body)
-    headers = {"Content-Type": "application/x-www-form-urlencoded", "Content-Length": str(len(body))}
-    responseDict = sendRequest("POST", path, body, headers)
+    path = "/onlinejudge/showProblem.do?problemCode=" + problemId
+    responseDict = sendRequest("GET", path, "", {})
     html = responseDict["html"]
     if html.find("No such problem.") != -1:
         error("No such problem.")
@@ -164,8 +161,12 @@ def init():
     checkFile(sys.argv[2])
 
     with open("user.config") as fin:
-        username = fin.readline()[0:-1].split("=")[1]
-        userpass = fin.readline()[0:-1].split("=")[1]
+        username = fin.readline().split("=")[1]
+        if username.find('\n')!=-1:
+            username=username[0:-1]
+        userpass = fin.readline().split("=")[1]
+        if userpass.find('\n')!=-1:
+            userpass=userpass[0:-1]
     # get file's type
     filetype = sys.argv[2][sys.argv[2].find(".") + 1:]
     languageId = getLanguage(filetype)
