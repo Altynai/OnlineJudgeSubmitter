@@ -1,5 +1,4 @@
-OnlineJudgeSubmitter
-====================
+# OnlineJudgeSubmitter
 
 A simple online judge submitter which can help you easily submit your code.
 
@@ -11,4 +10,6 @@ Add POJ (http://poj.org)
 Add HDU (http://acm.hdu.edu.cn)
 update some code
 
-Still working on it!!!
+
+# How to use?
+submitter.py problemid file
