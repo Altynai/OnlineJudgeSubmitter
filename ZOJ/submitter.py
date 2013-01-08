@@ -114,6 +114,7 @@ def getResult(cookie, runId):
     responseDict = sendRequest("GET", path, "", {})
 
     html = responseDict["html"]
+
     # get JudgeStatus
     if html.find('Compilation Error</a>') != -1:
         judgeStatus = 'Compilation Error'
@@ -184,7 +185,7 @@ def main():
     Waiting = False
     Compiling = False
     while True:
-        result = getResult(cookie)
+        result = getResult(cookie,runId)
         status = result["status"]
         # Waiting or Running or Compiling or Queuing
         if status == "Queuing":
