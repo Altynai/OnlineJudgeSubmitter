@@ -162,7 +162,7 @@ def init():
     # change problemId to submit
     problemId = checkProblem(problemId)
     checkFile(sys.argv[2])
-
+    
     with open("user.config") as fin:
         username = fin.readline().split("=")[1]
         if username.find('\n')!=-1:

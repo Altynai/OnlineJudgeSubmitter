@@ -74,7 +74,7 @@ def loginHDU():
     headers = {"Content-Type": "application/x-www-form-urlencoded", "Content-Length": str(len(body))}
     responseDict = sendRequest("POST", path, body, headers)
     response = responseDict["response"]
-
+    
     if response.status == httplib.OK:
         error("username or password is wrong!")
     cookie = getCookie(response)[0:-1]
@@ -146,7 +146,6 @@ def init():
         userpass = fin.readline().split("=")[1]
         if userpass.find('\n') != -1:
             userpass = userpass[0:-1]
-
     # get file's type
     filetype = sys.argv[2][sys.argv[2].find(".") + 1:]
     languageId = getLanguage(filetype)
