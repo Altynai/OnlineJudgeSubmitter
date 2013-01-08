@@ -12,4 +12,4 @@ update your infomation
 
 submit your code
 
-	submitter.py problemid file
+	main.py OJ problemcode sourcefile
